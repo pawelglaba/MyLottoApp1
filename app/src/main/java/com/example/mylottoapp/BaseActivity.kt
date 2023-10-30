@@ -8,21 +8,21 @@ open class BaseActivity : AppCompatActivity() {
 
     fun showErrorSnackBar(message: String, errorMessage: Boolean) {
         val snackbar =
-            Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_LONG)
+            Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_SHORT)
         val snackbarView = snackbar.view
 
         if (errorMessage) {
             snackbarView.setBackgroundColor(
                 ContextCompat.getColor(
                     this@BaseActivity,
-                    R.color.snackBarError
+                    R.color.snackBarSuccessful
                 )
             )
         } else {
             snackbarView.setBackgroundColor(
                 ContextCompat.getColor(
                     this@BaseActivity,
-                    R.color.snackBarSuccessful
+                            R.color.snackBarError
                 )
             )
         }
