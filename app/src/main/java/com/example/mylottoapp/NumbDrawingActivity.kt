@@ -7,19 +7,25 @@ import android.os.Looper
 import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import java.util.Random
+import kotlin.math.pow
 
 
-class NumbDrawingActivity : AppCompatActivity() {
+class NumbDrawingActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+
+
+        var score = 0
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_numb_drawing)
         val progressBar = findViewById<ProgressBar>(R.id.progressBar)
 
 
         val drawingButton = findViewById<Button>(R.id.numberDrawingButton)
+
 
         progressBar.max = 6
         val delayMillis = 1000L
@@ -70,15 +76,14 @@ class NumbDrawingActivity : AppCompatActivity() {
                     if(drawingNumbs[progressStatus-1] in selectedNumbers){
                        button.setBackgroundColor(Color.GREEN)
                         button.setTextColor(Color.WHITE)
+                        score++
                     } else{
                         button.setBackgroundColor(Color.RED)
                         button.setTextColor(Color.WHITE)
                     }
                 }
                 button.visibility = View.VISIBLE
-
-
-
+                        
                     }
                     try {
                         // Sleep for 1000 milliseconds.
@@ -88,16 +93,66 @@ class NumbDrawingActivity : AppCompatActivity() {
                     }
                 }
                 runOnUiThread {
+
+                    val winsNumb=simPlayers(doubleArrayOf(7.2e-8,1.8e-5,0.00097,0.077))
+                    val win = calculateWin(kotlin.random.Random.nextDouble(0.0,50e6),
+                        winsNumb, score)
+
+
+            showErrorSnackBar(
+                "You win: $win $",
+                errorMessage = false
+            )
                     drawingButton.isEnabled=true
+
                 }
             }.start()
-
         }
+
 
     }
 
+    //simPlayers function simulate others players winnings based on probability array
+    //which first element correspond to probability of win the lotto game, second element
+    // correspond to probability of correctly selected 5 numbers and so on. By default theoretical\
+    // number of players is set to 38 millions - but not everybody have to play.
+    fun simPlayers(probabilityArray: DoubleArray, numberOfPopulation: Int=38000000): IntArray {
+        val numberOfPlayers = Random().nextInt(numberOfPopulation)
+        val numberOfWins = IntArray(4)
+        var iterator = 0
+        for (probability in probabilityArray) {
+            var numberOfWinningPlayers = 0
 
-    fun lotto(n: Int = 6, m: Int = 49): IntArray {
+            repeat(numberOfPlayers) {
+                val randomValue = kotlin.random.Random.nextDouble(0.0, 1.0)
+                if (randomValue < probability) {
+                    numberOfWinningPlayers++
+                }
+            }
+            numberOfWins[iterator] = numberOfWinningPlayers
+            iterator++
+            numberOfWinningPlayers = 0
+        }
+        return numberOfWins
+    }
+
+    // calculateWin function calculate players win based on accumulation, number of others
+    // winners and player's score.
+    fun calculateWin(cummulate: Double=0.0,
+                     winners: IntArray
+                     , score: Int = 0): Double {
+
+        when (score) {
+            6 -> return (cummulate * 0.44) / (winners[0] + 1)
+            5 -> return (cummulate * 0.08) / winners[1] + 1
+            4 -> return (cummulate * 0.48) / winners[2] + 1
+            3 -> return (cummulate * 0.48) / winners[3] + 1
+            else -> return 0.0
+        }
+    }
+
+
+    fun lotto(n: Int = 6, m: Int = 6): IntArray {
 
         if (m < n) {
             println("Range cannot be smaller than array size")
@@ -127,8 +182,6 @@ class NumbDrawingActivity : AppCompatActivity() {
         }
     }
 
-    fun IntRange.random() =
-        Random().nextInt((endInclusive + 1) - start) + start
 
 
 }
