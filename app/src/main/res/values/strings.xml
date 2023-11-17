@@ -10,4 +10,10 @@
     <string name="numbSelectedSuccessful">Number added successfully</string>
     <string name="title_activity_numb_drawing">numbDrawingActivity</string>
     <string name="title_activity_main2">MainActivity2</string>
+    <string name="err_msg_enter_email">Please enter your email</string>
+    <string name="err_msg_enter_name">Please enter your name</string>
+    <string name="err_msg_enter_password">Please enter your password</string>
+    <string name="err_msg_enter_reppassword">Please confirm your password</string>
+    <string name="err_msg_password_mismatch">Passwords mismatch</string>
+    <string name="register_success">You are registered succesfully</string>
 </resources>
