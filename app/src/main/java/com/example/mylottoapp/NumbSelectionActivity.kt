@@ -1,15 +1,25 @@
 package com.example.mylottoapp
 
 import android.annotation.SuppressLint
+import android.content.ContentValues.TAG
 import android.content.Intent
+import android.nfc.Tag
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.NumberPicker
 import android.widget.TextView
 import com.google.android.material.snackbar.Snackbar
 import androidx.core.content.ContextCompat
+import com.example.mylottoapp.firestore.FireStoreData
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.firestore
 
 class NumbSelectionActivity : BaseActivity() {
+
+    val db = Firebase.firestore
+
     @SuppressLint("SuspiciousIndentation")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +58,24 @@ class NumbSelectionActivity : BaseActivity() {
                 if (i > numbersArray.size - 1) {
                     selectButton.isEnabled = false
                     getRichButton.isEnabled = true
+
+                    val userId = FirebaseAuth.getInstance().currentUser?.uid
+                   val email =  FirebaseAuth.getInstance().currentUser?.email.toString()
+                    val listOfNumbers =numbersArray.toList()
+                    val firebaseData = FireStoreData(email,listOfNumbers,null,0.0)
+
+                    userId?.let {
+                        db.collection("usersNumbers").document(email)
+                            .set(firebaseData)
+                            .addOnSuccessListener { documentReference ->
+                                // Handle success
+                                println("Document added with ID: ${email}")
+                            }
+                            .addOnFailureListener { e ->
+                                // Handle failure
+                                println("Error adding document: $e")
+                            }
+                    }
                 }
                 showErrorSnackBar(
                     resources.getString(R.string.numbSelectedSuccessful),
@@ -55,11 +83,12 @@ class NumbSelectionActivity : BaseActivity() {
                 )
 
             } else showErrorSnackBar(resources.getString(R.string.numbSelectedError), true)
+
         }
 
         getRichButton.setOnClickListener {
             val intent2 = Intent(this, NumbDrawingActivity::class.java)
-            intent2.putExtra("SELECTEDNUMBERS", numbersArray)
+            //intent2.putExtra("SELECTEDNUMBERS", numbersArray)
             startActivity(intent2)
         }
 

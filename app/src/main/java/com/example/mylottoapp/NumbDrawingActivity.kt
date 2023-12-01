@@ -10,22 +10,25 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
+import com.example.mylottoapp.firestore.FireStoreData
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.firestore
 import java.util.Random
 import kotlin.math.pow
 
 
 class NumbDrawingActivity : BaseActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
 
+    val db = Firebase.firestore
+
+    override fun onCreate(savedInstanceState: Bundle?) {
 
         var score = 0
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_numb_drawing)
         val progressBar = findViewById<ProgressBar>(R.id.progressBar)
-
-
         val drawingButton = findViewById<Button>(R.id.numberDrawingButton)
-
 
         progressBar.max = 6
         val delayMillis = 1000L
@@ -40,7 +43,22 @@ class NumbDrawingActivity : BaseActivity() {
             findViewById<Button>(R.id.button6)
         )
 
-        val selectedNumbers = intent.getIntArrayExtra("SELECTEDNUMBERS")
+        var selectedNumbers: IntArray? = IntArray(6)
+
+        db.collection("usersNumbers")
+            .document(FirebaseAuth.getInstance().currentUser?.email.toString())
+            .get()
+            .addOnSuccessListener { documentSnapshot ->
+                if (documentSnapshot.exists()) {
+                    val dbData = documentSnapshot.toObject(FireStoreData::class.java)
+                     selectedNumbers=dbData?.selNumb?.toIntArray()
+                }
+            }
+            .addOnFailureListener { e ->
+                // Handle failure
+                println("Error getting document usersNumbers - " +
+                        "${FirebaseAuth.getInstance().currentUser?.email}: $e")
+            }
 
 //        val selectedNumbersView = findViewById<TextView>(R.id.selectedNumbers)
 //        var text = "Yours numbers are: "
@@ -72,8 +90,7 @@ class NumbDrawingActivity : BaseActivity() {
                     handler.post {
                         progressBar.progress = progressStatus
                         button.text = drawingNumbs[progressStatus-1].toString()
-                if (selectedNumbers != null) {
-                    if(drawingNumbs[progressStatus-1] in selectedNumbers){
+                    if(selectedNumbers?.contains(drawingNumbs[progressStatus-1])==true){
                        button.setBackgroundColor(Color.GREEN)
                         button.setTextColor(Color.WHITE)
                         score++
@@ -81,7 +98,7 @@ class NumbDrawingActivity : BaseActivity() {
                         button.setBackgroundColor(Color.RED)
                         button.setTextColor(Color.WHITE)
                     }
-                }
+
                 button.visibility = View.VISIBLE
                         
                     }
@@ -97,6 +114,26 @@ class NumbDrawingActivity : BaseActivity() {
                     val winsNumb=simPlayers(doubleArrayOf(7.2e-8,1.8e-5,0.00097,0.077))
                     val win = calculateWin(kotlin.random.Random.nextDouble(0.0,50e6),
                         winsNumb, score)
+
+                    val updates = mapOf(
+                        "win" to win,
+                        "drawNumb" to drawingNumbs.toList()
+                    )
+
+                    db.collection("usersNumbers")
+                        .document(FirebaseAuth.getInstance().currentUser?.email.toString())
+                        .update(updates)
+                        .addOnSuccessListener {
+                            // Handle success
+                            println("Document updated successfully in usersNumbers" +
+                                    "/${FirebaseAuth.getInstance().currentUser?.email}")
+                        }
+                        .addOnFailureListener { e ->
+                            // Handle failure
+                            println("Error updating document in usersNumbers" +
+                                    "/${FirebaseAuth.getInstance().currentUser?.email}: $e")
+                        }
+
 
 
             showErrorSnackBar(

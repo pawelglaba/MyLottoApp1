@@ -25,11 +25,8 @@ class MainActivity :BaseActivity(), View.OnClickListener {
 
 
         loginButton?.setOnClickListener{
-
             logInRegisteredUser()
-
         }
-
     }
 
     override fun onClick(view: View?) {
