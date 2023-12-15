@@ -15,6 +15,10 @@ import com.example.mylottoapp.firestore.FireStoreData
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.firestore
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 
 class NumbSelectionActivity : BaseActivity() {
 
@@ -28,6 +32,7 @@ class NumbSelectionActivity : BaseActivity() {
         val name = intent.getStringExtra("NAME")
         val email = intent.getStringExtra("EMAIL")
         val phone = intent.getStringExtra("PHONE")
+        var formattedDateTime: String = ""
 
         val welcomeText = findViewById<TextView>(R.id.selectNumbersText)
         welcomeText.text = "$name, please select your lucky numbers!"
@@ -61,15 +66,23 @@ class NumbSelectionActivity : BaseActivity() {
 
                     val userId = FirebaseAuth.getInstance().currentUser?.uid
                    val email =  FirebaseAuth.getInstance().currentUser?.email.toString()
+
+
                     val listOfNumbers =numbersArray.toList()
                     val firebaseData = FireStoreData(email,listOfNumbers,null,0.0)
 
+
+                    val currentDate = LocalDateTime.now()
+                    formattedDateTime = currentDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+
+
                     userId?.let {
-                        db.collection("usersNumbers").document(email)
+                        db.collection(FirebaseAuth.getInstance().currentUser?.email.toString())
+                            .document(formattedDateTime)
                             .set(firebaseData)
-                            .addOnSuccessListener { documentReference ->
+                            .addOnSuccessListener {
                                 // Handle success
-                                println("Document added with ID: ${email}")
+                                println("Document added with ID: $email")
                             }
                             .addOnFailureListener { e ->
                                 // Handle failure
@@ -88,7 +101,7 @@ class NumbSelectionActivity : BaseActivity() {
 
         getRichButton.setOnClickListener {
             val intent2 = Intent(this, NumbDrawingActivity::class.java)
-            //intent2.putExtra("SELECTEDNUMBERS", numbersArray)
+            intent2.putExtra("DATETIME", formattedDateTime)
             startActivity(intent2)
         }
 
@@ -106,3 +119,4 @@ class NumbSelectionActivity : BaseActivity() {
 
 
 }
+

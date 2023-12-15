@@ -1,5 +1,7 @@
 package com.example.mylottoapp
 
+import android.annotation.SuppressLint
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
@@ -14,6 +16,8 @@ import com.example.mylottoapp.firestore.FireStoreData
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.firestore
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Random
 import kotlin.math.pow
 
@@ -22,7 +26,11 @@ class NumbDrawingActivity : BaseActivity() {
 
     val db = Firebase.firestore
 
+    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
+
+
+        val formattedDateTime = intent.getStringExtra("DATETIME")
 
         var score = 0
         super.onCreate(savedInstanceState)
@@ -33,6 +41,8 @@ class NumbDrawingActivity : BaseActivity() {
         progressBar.max = 6
         val delayMillis = 1000L
         val handler = Handler(Looper.getMainLooper())
+        val statisticsBtn = findViewById<Button>(R.id.statisticsBtn)
+        statisticsBtn.isEnabled = false
 
         val buttons = listOf(
             findViewById<Button>(R.id.button1),
@@ -43,22 +53,29 @@ class NumbDrawingActivity : BaseActivity() {
             findViewById<Button>(R.id.button6)
         )
 
+
+
         var selectedNumbers: IntArray? = IntArray(6)
 
-        db.collection("usersNumbers")
-            .document(FirebaseAuth.getInstance().currentUser?.email.toString())
-            .get()
-            .addOnSuccessListener { documentSnapshot ->
-                if (documentSnapshot.exists()) {
-                    val dbData = documentSnapshot.toObject(FireStoreData::class.java)
-                     selectedNumbers=dbData?.selNumb?.toIntArray()
+
+
+        if (formattedDateTime != null) {
+            db.collection(FirebaseAuth.getInstance().currentUser?.email.toString())
+                .document(formattedDateTime)
+                .get()
+                .addOnSuccessListener { documentSnapshot ->
+                    if (documentSnapshot.exists()) {
+                        val dbData = documentSnapshot.toObject(FireStoreData::class.java)
+                        selectedNumbers=dbData?.selNumb?.toIntArray()
+
+                    }
                 }
-            }
-            .addOnFailureListener { e ->
-                // Handle failure
-                println("Error getting document usersNumbers - " +
-                        "${FirebaseAuth.getInstance().currentUser?.email}: $e")
-            }
+                .addOnFailureListener { e ->
+                    // Handle failure
+                    println("Error getting document usersNumbers - " +
+                            "${FirebaseAuth.getInstance().currentUser?.email}: $e")
+                }
+        }
 
 //        val selectedNumbersView = findViewById<TextView>(R.id.selectedNumbers)
 //        var text = "Yours numbers are: "
@@ -115,25 +132,28 @@ class NumbDrawingActivity : BaseActivity() {
                     val win = calculateWin(kotlin.random.Random.nextDouble(0.0,50e6),
                         winsNumb, score)
 
+
                     val updates = mapOf(
                         "win" to win,
                         "drawNumb" to drawingNumbs.toList()
                     )
 
-                    db.collection("usersNumbers")
-                        .document(FirebaseAuth.getInstance().currentUser?.email.toString())
-                        .update(updates)
-                        .addOnSuccessListener {
-                            // Handle success
-                            println("Document updated successfully in usersNumbers" +
-                                    "/${FirebaseAuth.getInstance().currentUser?.email}")
-                        }
-                        .addOnFailureListener { e ->
-                            // Handle failure
-                            println("Error updating document in usersNumbers" +
-                                    "/${FirebaseAuth.getInstance().currentUser?.email}: $e")
-                        }
-
+                    if (formattedDateTime != null) {
+                        db.collection(FirebaseAuth.getInstance().currentUser?.email.toString())
+                            .document(formattedDateTime)
+                            .update(updates)
+                            .addOnSuccessListener {
+                                // Handle success
+                                println("Document updated successfully in usersNumbers" +
+                                        "/${FirebaseAuth.getInstance().currentUser?.email}")
+                            }
+                            .addOnFailureListener { e ->
+                                // Handle failure
+                                println("Error updating document in usersNumbers" +
+                                        "/${FirebaseAuth.getInstance().currentUser?.email}: $e")
+                            }
+                    }
+                    statisticsBtn.isEnabled = true
 
 
             showErrorSnackBar(
@@ -144,6 +164,11 @@ class NumbDrawingActivity : BaseActivity() {
 
                 }
             }.start()
+        }
+
+        statisticsBtn.setOnClickListener(){
+            val intent = Intent(this, StatisticsActivity::class.java)
+            startActivity(intent)
         }
 
 

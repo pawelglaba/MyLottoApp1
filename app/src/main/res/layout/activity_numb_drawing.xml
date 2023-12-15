@@ -119,6 +119,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/numberDrawingButton" />
 
+    <Button
+        android:id="@+id/statisticsBtn"
+        android:layout_width="168dp"
+        android:layout_height="71dp"
+        android:text="Statistics"
+        android:textSize="22sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/button5" />
+
 
     <!--
     <TextView
