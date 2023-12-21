@@ -178,7 +178,7 @@ class NumbDrawingActivity : BaseActivity() {
     //which first element correspond to probability of win the lotto game, second element
     // correspond to probability of correctly selected 5 numbers and so on. By default theoretical\
     // number of players is set to 38 millions - but not everybody have to play.
-    fun simPlayers(probabilityArray: DoubleArray, numberOfPopulation: Int=38000000): IntArray {
+    fun simPlayers(probabilityArray: DoubleArray, numberOfPopulation: Int=1000): IntArray {
         val numberOfPlayers = Random().nextInt(numberOfPopulation)
         val numberOfWins = IntArray(4)
         var iterator = 0

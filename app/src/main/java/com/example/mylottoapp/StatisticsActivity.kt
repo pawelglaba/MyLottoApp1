@@ -2,10 +2,13 @@ package com.example.mylottoapp
 
 import android.annotation.SuppressLint
 import android.content.ContentValues.TAG
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -20,7 +23,7 @@ import com.google.firebase.firestore.firestore
 class StatisticsActivity : AppCompatActivity(){
 
     val db = Firebase.firestore
-
+    val list: MutableList<String> = ArrayList()
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,10 +35,10 @@ class StatisticsActivity : AppCompatActivity(){
 
         val email = FirebaseAuth.getInstance().currentUser?.email.toString()
 
+
         db.collection(email).get()
             .addOnCompleteListener(OnCompleteListener<QuerySnapshot> { task ->
                 if (task.isSuccessful) {
-                    val list: MutableList<String> = ArrayList()
                     for (document in task.result) {
                         list.add(document.id)
                     }
@@ -48,12 +51,7 @@ class StatisticsActivity : AppCompatActivity(){
                     Log.d(TAG, "Error getting documents: ", task.exception)
                 }
             })
-
-
-
-
     }
-
 }
 
 

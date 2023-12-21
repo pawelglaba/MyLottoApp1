@@ -16,4 +16,6 @@
     <string name="err_msg_enter_reppassword">Please confirm your password</string>
     <string name="err_msg_password_mismatch">Passwords mismatch</string>
     <string name="register_success">You are registered succesfully</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
