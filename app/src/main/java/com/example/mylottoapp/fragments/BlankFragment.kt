@@ -25,7 +25,6 @@ class BlankFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
-
         }
     }
 
@@ -34,13 +33,12 @@ class BlankFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        val position = arguments?.getInt("position")
         val rootView = inflater.inflate(R.layout.fragment_blank, container, false)
+        val position = arguments?.getInt("position")
         val winText = rootView.findViewById<TextView>(R.id.winTV)
         val backButton = rootView.findViewById<Button>(R.id.backButton)
 
         backButton.setOnClickListener {
-
             val activity: FragmentActivity? = activity
             activity?.supportFragmentManager?.beginTransaction()?.remove(this)?.commit()
         }
@@ -86,13 +84,4 @@ class BlankFragment : Fragment() {
         return rootView
     }
 
-    companion object {
-
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            BlankFragment().apply {
-                arguments = Bundle().apply {
-                }
-            }
-    }
 }

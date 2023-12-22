@@ -17,10 +17,6 @@ package com.example.mylottoapp
 class MyAdapter(private val dataSet: List<String>) :
         RecyclerView.Adapter<MyAdapter.ViewHolder>() {
 
-            private var mClickListener: ItemClickListener? = null
-    interface ItemClickListener {
-        fun onItemClick(position: Int)
-    }
 
         // The ViewHolder class represents a single view element within the RecyclerView.
         // In the case of this class, it will be a single item in the list.
@@ -32,7 +28,6 @@ class MyAdapter(private val dataSet: List<String>) :
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val textView: TextView = view.findViewById(R.id.textViewSingleItem)
         val buttonDelete: Button = view.findViewById(R.id.DeleteButton)
-        private var mClickListener: ItemClickListener? = null
 
 
         init {
@@ -40,6 +35,8 @@ class MyAdapter(private val dataSet: List<String>) :
 
                 val demoFragment=BlankFragment()
 
+                // transfer position value to the fragment like by intent between
+                // activities
                 val position: Int = adapterPosition
                 val bundle = Bundle()
                 bundle.putInt("position", position)
@@ -51,14 +48,9 @@ class MyAdapter(private val dataSet: List<String>) :
                 replace(R.id.statisticView,demoFragment).
                     addToBackStack(null).commit()
 
-//
-//                val intent = Intent(view.context, MainActivity::class.java)
-//                intent.putExtra("selectedItem", position)
-//                view.context.startActivity(intent)
             }
         }
     }
-
 
         // The onCreateViewHolder method creates new instances of ViewHolder, which will be used by the RecyclerView.
         // It is called only when the RecyclerView needs to create a new ViewHolder, for example, during
@@ -86,12 +78,5 @@ class MyAdapter(private val dataSet: List<String>) :
         override fun getItemCount(): Int {
             return dataSet.size
         }
-
-
-
-    fun setClickListener(itemClickListener: ItemClickListener?) {
-        mClickListener = itemClickListener
-    }
-
 
 }
