@@ -1,6 +1,8 @@
 package com.example.mylottoapp
 
 import android.annotation.SuppressLint
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.content.ContentValues.TAG
 import android.content.Intent
 import android.nfc.Tag
@@ -15,9 +17,15 @@ import com.example.mylottoapp.firestore.FireStoreData
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.util.Calendar
 
 
 class NumbSelectionActivity : BaseActivity() {
@@ -28,6 +36,9 @@ class NumbSelectionActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_numb_selection)
+
+        //setting notification
+
         val intent = intent
         val name = intent.getStringExtra("NAME")
         val email = intent.getStringExtra("EMAIL")
@@ -53,6 +64,7 @@ class NumbSelectionActivity : BaseActivity() {
         var text = ""
 
         selectButton.setOnClickListener {
+
             var selectedNumber = numbersPicker.value
             if (checkSelectedNumber(selectedNumber, numbersArray)) {
 
@@ -75,19 +87,8 @@ class NumbSelectionActivity : BaseActivity() {
                     val currentDate = LocalDateTime.now()
                     formattedDateTime = currentDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 
-
-                    userId?.let {
-                        db.collection(FirebaseAuth.getInstance().currentUser?.email.toString())
-                            .document(formattedDateTime)
-                            .set(firebaseData)
-                            .addOnSuccessListener {
-                                // Handle success
-                                println("Document added with ID: $email")
-                            }
-                            .addOnFailureListener { e ->
-                                // Handle failure
-                                println("Error adding document: $e")
-                            }
+                    runBlocking {
+                       setDBdata(userId,formattedDateTime,firebaseData)
                     }
                 }
                 showErrorSnackBar(
@@ -100,14 +101,28 @@ class NumbSelectionActivity : BaseActivity() {
         }
 
         getRichButton.setOnClickListener {
+            var intentNot =  Intent (this, ReminderBroadcast::class.java)
+            var pendingIntent = PendingIntent.getBroadcast(this,0,intentNot, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            var alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
+            val calendar = Calendar.getInstance()
+            var currentTime= calendar.timeInMillis
+            var tenSecondsMillis = 1000*4
+            alarmManager.set(AlarmManager.RTC_WAKEUP,currentTime+tenSecondsMillis,pendingIntent)
+
             val intent2 = Intent(this, NumbDrawingActivity::class.java)
             intent2.putExtra("DATETIME", formattedDateTime)
             startActivity(intent2)
         }
 
-
     }
 
+    suspend fun setDBdata(userId: String?, formattedDateTime: String, firebaseData: FireStoreData){
+        userId?.let {
+            db.collection(FirebaseAuth.getInstance().currentUser?.email.toString())
+                .document(formattedDateTime)
+                .set(firebaseData).await()
+        }
+    }
     fun checkSelectedNumber(number: Int, array: IntArray): Boolean {
         for (element in array) {
             if (element == number) {
