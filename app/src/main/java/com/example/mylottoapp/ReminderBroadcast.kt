@@ -24,7 +24,9 @@ public class ReminderBroadcast : BroadcastReceiver() {
 
         val channel = NotificationChannel("ChannelId" , "ChannelId", NotificationManager.IMPORTANCE_DEFAULT)
         NotificationManagerCompat.from(context).createNotificationChannel(channel)
-        var manager = NotificationManagerCompat.from(context)
+
+
+        val manager: NotificationManagerCompat = NotificationManagerCompat.from(context)
         if (ActivityCompat.checkSelfPermission(
                 context,
                 Manifest.permission.POST_NOTIFICATIONS

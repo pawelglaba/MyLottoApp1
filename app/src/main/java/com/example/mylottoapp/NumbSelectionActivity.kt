@@ -17,6 +17,7 @@ import com.example.mylottoapp.firestore.FireStoreData
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -87,9 +88,13 @@ class NumbSelectionActivity : BaseActivity() {
                     val currentDate = LocalDateTime.now()
                     formattedDateTime = currentDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 
-                    runBlocking {
-                       setDBdata(userId,formattedDateTime,firebaseData)
-                    }
+                  GlobalScope.launch(Dispatchers.IO ){
+                      userId?.let {
+                          db.collection(FirebaseAuth.getInstance().currentUser?.email.toString())
+                              .document(formattedDateTime)
+                              .set(firebaseData).await()
+                      }
+                  }
                 }
                 showErrorSnackBar(
                     resources.getString(R.string.numbSelectedSuccessful),
@@ -101,12 +106,13 @@ class NumbSelectionActivity : BaseActivity() {
         }
 
         getRichButton.setOnClickListener {
-            var intentNot =  Intent (this, ReminderBroadcast::class.java)
-            var pendingIntent = PendingIntent.getBroadcast(this,0,intentNot, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-            var alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
+
+            val intentNot =  Intent (this, ReminderBroadcast::class.java)
+            val pendingIntent = PendingIntent.getBroadcast(this,0,intentNot, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
             val calendar = Calendar.getInstance()
-            var currentTime= calendar.timeInMillis
-            var tenSecondsMillis = 1000*4
+            val currentTime= calendar.timeInMillis
+            val tenSecondsMillis = 1000*4
             alarmManager.set(AlarmManager.RTC_WAKEUP,currentTime+tenSecondsMillis,pendingIntent)
 
             val intent2 = Intent(this, NumbDrawingActivity::class.java)
@@ -116,13 +122,6 @@ class NumbSelectionActivity : BaseActivity() {
 
     }
 
-    suspend fun setDBdata(userId: String?, formattedDateTime: String, firebaseData: FireStoreData){
-        userId?.let {
-            db.collection(FirebaseAuth.getInstance().currentUser?.email.toString())
-                .document(formattedDateTime)
-                .set(firebaseData).await()
-        }
-    }
     fun checkSelectedNumber(number: Int, array: IntArray): Boolean {
         for (element in array) {
             if (element == number) {
