@@ -15,10 +15,14 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import com.example.mylottoapp.firestore.FireStoreData
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Random
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlin.math.pow
 
 
@@ -28,7 +32,6 @@ class NumbDrawingActivity : BaseActivity() {
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
-
 
         val formattedDateTime = intent.getStringExtra("DATETIME")
 
@@ -53,11 +56,7 @@ class NumbDrawingActivity : BaseActivity() {
             findViewById<Button>(R.id.button6)
         )
 
-
-
         var selectedNumbers: IntArray? = IntArray(6)
-
-
 
         if (formattedDateTime != null) {
             db.collection(FirebaseAuth.getInstance().currentUser?.email.toString())
@@ -241,6 +240,27 @@ class NumbDrawingActivity : BaseActivity() {
             } while (iterator < n)
             return numbers
 
+        }
+    }
+
+    suspend fun fetchDataFromFirestore(formattedDateTime: String): FireStoreData? {
+        return suspendCancellableCoroutine { continuation ->
+            val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email.toString()
+            val db = FirebaseFirestore.getInstance()
+            val docRef = db.collection(currentUserEmail).document(formattedDateTime)
+
+            docRef.get()
+                .addOnSuccessListener { documentSnapshot ->
+                    if (documentSnapshot.exists()) {
+                        val db = documentSnapshot.toObject(FireStoreData::class.java)
+                        continuation.resume(db)
+                    } else {
+                        continuation.resume(null)
+                    }
+                }
+                .addOnFailureListener { e ->
+                    continuation.resumeWithException(e)
+                }
         }
     }
 

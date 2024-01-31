@@ -12,7 +12,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 
 
-public class ReminderBroadcast : BroadcastReceiver() {
+class ReminderBroadcast : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         var notificationBuilder = NotificationCompat.Builder(context, "ChannelId")

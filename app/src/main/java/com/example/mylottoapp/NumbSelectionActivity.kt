@@ -113,6 +113,7 @@ class NumbSelectionActivity : BaseActivity() {
             val calendar = Calendar.getInstance()
             val currentTime= calendar.timeInMillis
             val tenSecondsMillis = 1000*4
+
             alarmManager.set(AlarmManager.RTC_WAKEUP,currentTime+tenSecondsMillis,pendingIntent)
 
             val intent2 = Intent(this, NumbDrawingActivity::class.java)

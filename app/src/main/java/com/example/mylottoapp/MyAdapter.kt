@@ -10,73 +10,92 @@ package com.example.mylottoapp
     import android.widget.Button
     import android.widget.TextView
     import androidx.appcompat.app.AppCompatActivity
+    import androidx.core.content.ContextCompat
     import androidx.recyclerview.widget.RecyclerView
     import com.example.mylottoapp.fragments.BlankFragment
-
-
 class MyAdapter(private val dataSet: List<String>) :
-        RecyclerView.Adapter<MyAdapter.ViewHolder>() {
+    RecyclerView.Adapter<MyAdapter.ViewHolder>() {
 
+    // ViewModel to store button states
+    class ButtonViewModel {
+        val buttonStates: MutableMap<Int, Boolean> = mutableMapOf()
+    }
 
-        // The ViewHolder class represents a single view element within the RecyclerView.
-        // In the case of this class, it will be a single item in the list.
+    // Initialize the ViewModel
+    private val buttonViewModel = ButtonViewModel()
 
-    //            In kotlin the init block is often used within classes. The init block is a special code
-//            block that is executed during the initialization of an instance of a class
-//            this block allows the execution of onitialization code without placing it directly in
-//            the body of the class constructor
-    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val textView: TextView = view.findViewById(R.id.textViewSingleItem)
         val buttonDelete: Button = view.findViewById(R.id.DeleteButton)
 
-
         init {
-            itemView.setOnClickListener { view: View ->
+            itemView.setOnClickListener {
+                val demoFragment = BlankFragment()
 
-                val demoFragment=BlankFragment()
-
-                // transfer position value to the fragment like by intent between
-                // activities
+                // Transfer position value to the fragment using arguments
                 val position: Int = adapterPosition
+                println("BUTTON PRESSED $position")
                 val bundle = Bundle()
                 bundle.putInt("position", position)
-                demoFragment.setArguments(bundle)
+                demoFragment.arguments = bundle
 
-                val activity=view.context as AppCompatActivity
+                val activity = view.context as AppCompatActivity
 
-                activity.supportFragmentManager.beginTransaction().
-                replace(R.id.statisticView,demoFragment).
-                    addToBackStack(null).commit()
+                // Get the button state from the ViewModel
+                val isButtonClicked = buttonViewModel.buttonStates[position] ?: false
 
+                if (isButtonClicked) {
+                    // If the button is already clicked, restore the original color
+                    val defaultButtonColor =
+                        ContextCompat.getColor(view.context, R.color.purple_700)
+                    buttonDelete.setBackgroundColor(defaultButtonColor)
+                } else {
+                    // If the button is not clicked, change the color
+                    val clickedButtonColor =
+                        ContextCompat.getColor(view.context, R.color.purple_200)
+                    buttonDelete.setBackgroundColor(clickedButtonColor)
+                }
+
+                // Update the button state in the ViewModel
+                buttonViewModel.buttonStates[position] = !isButtonClicked
+
+                // Notify RecyclerView about the item change
+                notifyItemChanged(position)
+
+                // Commit the fragment transaction
+                activity.supportFragmentManager.beginTransaction()
+                    .replace(R.id.statisticView, demoFragment)
+                    .addToBackStack(null)
+                    .commit()
             }
         }
     }
 
-        // The onCreateViewHolder method creates new instances of ViewHolder, which will be used by the RecyclerView.
-        // It is called only when the RecyclerView needs to create a new ViewHolder, for example, during
-        // initialization or when scrolling to a new position in the view.
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_example, parent, false)
+        return ViewHolder(view)
+    }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            // Creating a new view from the XML file (item_example.xml).
-            val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.item_example, parent, false)
-            return ViewHolder(view)
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val item = dataSet[position]
+        holder.textView.text = item
+
+        // Set the button state based on the ViewModel
+        val isButtonClicked = buttonViewModel.buttonStates[position] ?: false
+        if (isButtonClicked) {
+            val clickedButtonColor =
+                ContextCompat.getColor(holder.itemView.context, R.color.purple_200)
+            holder.buttonDelete.setBackgroundColor(clickedButtonColor)
+        } else {
+            val defaultButtonColor =
+                ContextCompat.getColor(holder.itemView.context, R.color.purple_700)
+            holder.buttonDelete.setBackgroundColor(defaultButtonColor)
         }
+    }
 
-        // The onBindViewHolder method associates data with the appropriate elements inside the ViewHolder.
-        // It is called every time the RecyclerView needs to display a new item.
-
-        @SuppressLint("NotifyDataSetChanged")
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val item = dataSet[position]
-            holder.textView.text = item
-
-        }
-
-        // The getItemCount method returns the number of items in the data set.
-        // It is called by the RecyclerView to determine how many items it needs to display.
-        override fun getItemCount(): Int {
-            return dataSet.size
-        }
-
+    override fun getItemCount(): Int {
+        return dataSet.size
+    }
 }
+
