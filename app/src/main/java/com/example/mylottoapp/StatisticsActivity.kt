@@ -42,8 +42,13 @@ class StatisticsActivity : AppCompatActivity(){
                     for (document in task.result) {
                         list.add(document.id)
                     }
-                    val gameResults = list.toList()
-                    val adapter = MyAdapter(gameResults)
+                    val gameResults: List<String> = list.toList()
+                    val adapter = MyAdapter(gameResults, object : ButtonClickListener {
+                        override fun onButtonClick(position: Int) {
+                          // for testing
+                            println("Button clicked in item at position: $position")
+                        }
+                    })
                     recyclerView.adapter = adapter
 
                     Log.d(TAG, list.toString())

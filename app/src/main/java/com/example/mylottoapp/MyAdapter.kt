@@ -13,7 +13,14 @@ package com.example.mylottoapp
     import androidx.core.content.ContextCompat
     import androidx.recyclerview.widget.RecyclerView
     import com.example.mylottoapp.fragments.BlankFragment
-class MyAdapter(private val dataSet: List<String>) :
+
+// Interface defining a button click listener
+interface ButtonClickListener {
+    fun onButtonClick(position: Int)
+}
+
+// Adapter class with the ButtonClickListener interface
+class MyAdapter(private val dataSet: List<String>, private val buttonClickListener: ButtonClickListener) :
     RecyclerView.Adapter<MyAdapter.ViewHolder>() {
 
     // ViewModel to store button states
@@ -62,6 +69,8 @@ class MyAdapter(private val dataSet: List<String>) :
                 // Notify RecyclerView about the item change
                 notifyItemChanged(position)
 
+
+
                 // Commit the fragment transaction
                 activity.supportFragmentManager.beginTransaction()
                     .replace(R.id.statisticView, demoFragment)
@@ -77,9 +86,17 @@ class MyAdapter(private val dataSet: List<String>) :
         return ViewHolder(view)
     }
 
+    // Associates data with the appropriate elements inside the ViewHolder
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = dataSet[position]
         holder.textView.text = item
+
+        // Assigns an onClick method for the button
+        holder.buttonDelete.setOnClickListener {
+            // Calls the onButtonClick method from the interface
+            buttonClickListener.onButtonClick(position)
+        }
+
 
         // Set the button state based on the ViewModel
         val isButtonClicked = buttonViewModel.buttonStates[position] ?: false
