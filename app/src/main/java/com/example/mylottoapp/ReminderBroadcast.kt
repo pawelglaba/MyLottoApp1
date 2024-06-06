@@ -11,38 +11,39 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 
-
+/**
+ * BroadcastReceiver odpowiedzialny za wysyłanie powiadomień przypominających o sprawdzeniu wyników lotto.
+ */
 class ReminderBroadcast : BroadcastReceiver() {
 
+    /**
+     *
+     * @param context Kontekst aplikacji.
+     * @param intent Intent, który spowodował wywołanie odbiornika.
+     */
+
     override fun onReceive(context: Context, intent: Intent) {
-        var notificationBuilder = NotificationCompat.Builder(context, "ChannelId")
+        // Konfiguracja powiadomienia
+        val notificationBuilder = NotificationCompat.Builder(context, "ChannelId")
         notificationBuilder
             .setSmallIcon(R.drawable.logo)
             .setContentTitle("Lotto Game")
             .setContentText("Remember to check your score")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
-        val channel = NotificationChannel("ChannelId" , "ChannelId", NotificationManager.IMPORTANCE_DEFAULT)
+        // Utworzenie kanału powiadomień
+        val channel = NotificationChannel("ChannelId", "ChannelId", NotificationManager.IMPORTANCE_DEFAULT)
         NotificationManagerCompat.from(context).createNotificationChannel(channel)
 
-
         val manager: NotificationManagerCompat = NotificationManagerCompat.from(context)
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+
+        // Sprawdzenie uprawnień do wysyłania powiadomień
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+
             return
         }
+
+        // Wyślij powiadomienie
         manager.notify(200, notificationBuilder.build())
-
-            }
     }
-
+}

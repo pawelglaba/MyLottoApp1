@@ -1,45 +1,44 @@
 package com.example.mylottoapp
 
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.RecyclerView
+import com.example.mylottoapp.fragments.BlankFragment
 
-
-    import android.annotation.SuppressLint
-    import android.os.Bundle
-    import android.view.LayoutInflater
-    import android.view.View
-    import android.view.ViewGroup
-    import android.widget.Button
-    import android.widget.TextView
-    import androidx.appcompat.app.AppCompatActivity
-    import androidx.core.content.ContextCompat
-    import androidx.recyclerview.widget.RecyclerView
-    import com.example.mylottoapp.fragments.BlankFragment
-
-// Interface defining a button click listener
+// Interfejs definiujący nasłuchiwacz kliknięć przycisku
 interface ButtonClickListener {
     fun onButtonClick(position: Int)
 }
 
-// Adapter class with the ButtonClickListener interface
+// Adapter z interfejsem ButtonClickListener
 class MyAdapter(private val dataSet: List<String>, private val buttonClickListener: ButtonClickListener) :
     RecyclerView.Adapter<MyAdapter.ViewHolder>() {
 
-    // ViewModel to store button states
+    // ViewModel do przechowywania stanów przycisków
     class ButtonViewModel {
         val buttonStates: MutableMap<Int, Boolean> = mutableMapOf()
     }
 
-    // Initialize the ViewModel
+    // Inicjalizacja ViewModel
     private val buttonViewModel = ButtonViewModel()
 
+    // ViewHolder odpowiedzialny za przechowywanie referencji do widoków
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val textView: TextView = view.findViewById(R.id.textViewSingleItem)
         val buttonDelete: Button = view.findViewById(R.id.DeleteButton)
 
         init {
+            // Ustawienie nasłuchiwacza kliknięć na itemView
             itemView.setOnClickListener {
                 val demoFragment = BlankFragment()
 
-                // Transfer position value to the fragment using arguments
+                // Przekazanie wartości pozycji do fragmentu za pomocą argumentów
                 val position: Int = adapterPosition
                 println("BUTTON PRESSED $position")
                 val bundle = Bundle()
@@ -48,30 +47,28 @@ class MyAdapter(private val dataSet: List<String>, private val buttonClickListen
 
                 val activity = view.context as AppCompatActivity
 
-                // Get the button state from the ViewModel
+                // Pobranie stanu przycisku z ViewModel
                 val isButtonClicked = buttonViewModel.buttonStates[position] ?: false
 
                 if (isButtonClicked) {
-                    // If the button is already clicked, restore the original color
+                    // Jeśli przycisk był już kliknięty, przywrócenie domyślnego koloru
                     val defaultButtonColor =
                         ContextCompat.getColor(view.context, R.color.purple_700)
                     buttonDelete.setBackgroundColor(defaultButtonColor)
                 } else {
-                    // If the button is not clicked, change the color
+                    // Jeśli przycisk nie był kliknięty, zmiana koloru
                     val clickedButtonColor =
                         ContextCompat.getColor(view.context, R.color.purple_200)
                     buttonDelete.setBackgroundColor(clickedButtonColor)
                 }
 
-                // Update the button state in the ViewModel
+                // Aktualizacja stanu przycisku w ViewModel
                 buttonViewModel.buttonStates[position] = !isButtonClicked
 
-                // Notify RecyclerView about the item change
+                // Powiadomienie RecyclerView o zmianie elementu
                 notifyItemChanged(position)
 
-
-
-                // Commit the fragment transaction
+                // Przeprowadzenie transakcji fragmentu
                 activity.supportFragmentManager.beginTransaction()
                     .replace(R.id.statisticView, demoFragment)
                     .addToBackStack(null)
@@ -80,25 +77,25 @@ class MyAdapter(private val dataSet: List<String>, private val buttonClickListen
         }
     }
 
+    // Tworzenie ViewHoldera i inicjalizacja widoku
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_example, parent, false)
         return ViewHolder(view)
     }
 
-    // Associates data with the appropriate elements inside the ViewHolder
+    // Przypisywanie danych do odpowiednich elementów wewnątrz ViewHoldera
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = dataSet[position]
         holder.textView.text = item
 
-        // Assigns an onClick method for the button
+        // Ustawienie metody onClick dla przycisku
         holder.buttonDelete.setOnClickListener {
-            // Calls the onButtonClick method from the interface
+            // Wywołanie metody onButtonClick z interfejsu
             buttonClickListener.onButtonClick(position)
         }
 
-
-        // Set the button state based on the ViewModel
+        // Ustawienie stanu przycisku na podstawie ViewModel
         val isButtonClicked = buttonViewModel.buttonStates[position] ?: false
         if (isButtonClicked) {
             val clickedButtonColor =
@@ -111,8 +108,8 @@ class MyAdapter(private val dataSet: List<String>, private val buttonClickListen
         }
     }
 
+    // Zwracanie liczby elementów w dataSet
     override fun getItemCount(): Int {
         return dataSet.size
     }
 }
-
