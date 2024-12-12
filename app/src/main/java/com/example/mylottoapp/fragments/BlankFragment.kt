@@ -1,7 +1,5 @@
 package com.example.mylottoapp.fragments
 
-
-import android.content.ContentValues
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -10,23 +8,22 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import com.example.mylottoapp.R
 import com.example.mylottoapp.firestore.FireStoreData
-import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.firestore
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
+/**
+ * BlankFragment is responsible for displaying the details of a selected lotto game.
+ */
 class BlankFragment : Fragment() {
 
-
-    val db = Firebase.firestore
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-        }
-    }
+    private val db = Firebase.firestore
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -38,50 +35,44 @@ class BlankFragment : Fragment() {
         val winText = rootView.findViewById<TextView>(R.id.winTV)
         val backButton = rootView.findViewById<Button>(R.id.backButton)
 
+        // Handle back button click to remove fragment
         backButton.setOnClickListener {
-            val activity: FragmentActivity? = activity
             activity?.supportFragmentManager?.beginTransaction()?.remove(this)?.commit()
         }
 
-
-
-        if (position != null) {
-            db.collection(FirebaseAuth.getInstance().currentUser?.email.toString())
-                .get()
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        val list: MutableList<String> = ArrayList()
-                        for (document in task.result) {
-                            list.add(document.id)
-                        }
-                        Log.d(ContentValues.TAG, list.toString())
-
-
-                        if (position < list.size) {
-                            db.collection(FirebaseAuth.getInstance().currentUser?.email.toString())
-                                .document(list[position])
-                                .get()
-                                .addOnSuccessListener { documentSnapshot ->
-                                    if (documentSnapshot.exists()) {
-                                        val dbData = documentSnapshot.toObject(FireStoreData::class.java)
-                                        winText.text = dbData?.win.toString()
-                                    }
-                                }
-                                .addOnFailureListener { e ->
-                                    // Handle failure
-                                    println("Error getting document usersNumbers - " +
-                                            "${FirebaseAuth.getInstance().currentUser?.email}: $e")
-                                }
-                        } else {
-                            Log.e(ContentValues.TAG, "Position is out of range")
-                        }
-                    } else {
-                        Log.e(ContentValues.TAG, "Error getting documents: ", task.exception)
-                    }
-                }
-        }
+        // Fetch and display lotto game details if position is valid
+        position?.let { fetchGameDetails(it, winText) }
 
         return rootView
     }
 
+    /**
+     * Fetches and displays the game details for the given position.
+     *
+     * @param position The position of the selected game.
+     * @param winText The TextView where the winning amount will be displayed.
+     */
+    private fun fetchGameDetails(position: Int, winText: TextView) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val email = FirebaseAuth.getInstance().currentUser?.email.orEmpty()
+                val querySnapshot = db.collection(email).get().await()
+                val documentIds = querySnapshot.documents.map { it.id }
+
+                if (position in documentIds.indices) {
+                    val documentSnapshot = db.collection(email).document(documentIds[position]).get().await()
+                    val dbData = documentSnapshot.toObject(FireStoreData::class.java)
+
+                    // Update the UI on the main thread
+                    CoroutineScope(Dispatchers.Main).launch {
+                        winText.text = dbData?.win?.toString() ?: "No data available"
+                    }
+                } else {
+                    Log.e("BlankFragment", "Position is out of range")
+                }
+            } catch (e: Exception) {
+                Log.e("BlankFragment", "Error fetching game details", e)
+            }
+        }
+    }
 }

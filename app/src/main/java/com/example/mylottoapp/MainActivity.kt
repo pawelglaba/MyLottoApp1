@@ -9,43 +9,42 @@ import android.widget.EditText
 import com.google.firebase.auth.FirebaseAuth
 
 /**
- * MainActivity to główna aktywność aplikacji, która obsługuje logowanie użytkownika.
+ * MainActivity is the main activity of the application that handles user login.
  */
 class MainActivity : BaseActivity(), View.OnClickListener {
 
-    private var inputEmail: EditText? = null
-    private var inputPassword: EditText? = null
+    private var emailInput: EditText? = null
+    private var passwordInput: EditText? = null
     private var loginButton: Button? = null
 
     /**
-     * Metoda wywoływana przy tworzeniu aktywności.
-     * Inicjalizuje widoki i ustawia nasłuchiwacze kliknięć.
+     * Called when the activity is created. Initializes views and sets up click listeners.
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Inicjalizacja pól wprowadzania i przycisku logowania
-        inputEmail = findViewById(R.id.inputEmail)
-        inputPassword = findViewById(R.id.inputPassword2)
+        // Initialize input fields and login button
+        emailInput = findViewById(R.id.inputEmail)
+        passwordInput = findViewById(R.id.inputPassword2)
         loginButton = findViewById(R.id.loginButton)
 
-        // Ustawienie nasłuchiwacza kliknięcia na przycisk logowania
-        loginButton?.setOnClickListener{
+        // Set click listener for the login button
+        loginButton?.setOnClickListener {
             logInRegisteredUser()
         }
     }
 
     /**
-     * Metoda obsługująca kliknięcia na widżetach
+     * Handles click events for widgets.
      *
-     * @param view Widok/widżet, który został kliknięty w tym przypadku TextView.
+     * @param view The clicked widget.
      */
     override fun onClick(view: View?) {
-        if(view != null){
-            when (view.id){
+        if (view != null) {
+            when (view.id) {
                 R.id.registerTextView -> {
-                    // Przejście do aktywności rejestracji
+                    // Navigate to the registration activity
                     val intent = Intent(this, RegisterActivity::class.java)
                     startActivity(intent)
                 }
@@ -54,20 +53,20 @@ class MainActivity : BaseActivity(), View.OnClickListener {
     }
 
     /**
-     * Metoda walidująca dane logowania.
+     * Validates login details entered by the user.
      *
-     * @return Zwraca true, jeśli dane logowania są poprawne, w przeciwnym razie false.
+     * @return true if login details are valid, false otherwise.
      */
     private fun validateLoginDetails(): Boolean {
         return when {
-            // Sprawdzenie, czy email jest pusty
-            TextUtils.isEmpty(inputEmail?.text.toString().trim { it <= ' ' }) -> {
-                showErrorSnackBar(resources.getString(R.string.err_msg_enter_email), true)
+            // Check if the email is empty
+            TextUtils.isEmpty(emailInput?.text.toString().trim()) -> {
+                showErrorSnackBar(getString(R.string.err_msg_enter_email), true)
                 false
             }
-            // Sprawdzenie, czy hasło jest puste
-            TextUtils.isEmpty(inputPassword?.text.toString().trim { it <= ' ' }) -> {
-                showErrorSnackBar(resources.getString(R.string.err_msg_enter_password), true)
+            // Check if the password is empty
+            TextUtils.isEmpty(passwordInput?.text.toString().trim()) -> {
+                showErrorSnackBar(getString(R.string.err_msg_enter_password), true)
                 false
             }
             else -> {
@@ -78,19 +77,19 @@ class MainActivity : BaseActivity(), View.OnClickListener {
     }
 
     /**
-     * Metoda obsługująca logowanie zarejestrowanego użytkownika.
+     * Logs in the registered user using Firebase Authentication.
      */
     private fun logInRegisteredUser() {
         if (validateLoginDetails()) {
-            val email = inputEmail?.text.toString().trim { it <= ' ' }
-            val password = inputPassword?.text.toString().trim { it <= ' ' }
+            val email = emailInput?.text.toString().trim()
+            val password = passwordInput?.text.toString().trim()
 
-            // Logowanie za pomocą FirebaseAuth
+            // Sign in using FirebaseAuth
             FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
                         showErrorSnackBar("You are logged in successfully.", false)
-                        goToNumbSelectionActivity()
+                        goToNumberSelectionActivity()
                         finish()
                     } else {
                         showErrorSnackBar(task.exception!!.message.toString(), true)
@@ -100,15 +99,15 @@ class MainActivity : BaseActivity(), View.OnClickListener {
     }
 
     /**
-     * Metoda przechodząca do aktywności wyboru numerów.
-     * Przekazuje adres email zalogowanego użytkownika do nowej aktywności.
+     * Navigates to the number selection activity.
+     * Passes the email of the logged-in user to the new activity.
      */
-    open fun goToNumbSelectionActivity() {
+    private fun goToNumberSelectionActivity() {
         val user = FirebaseAuth.getInstance().currentUser
-        val uid = user?.email.toString()
+        val email = user?.email.toString()
 
         val intent = Intent(this, NumbSelectionActivity::class.java)
-        intent.putExtra("uID", uid)
+        intent.putExtra("userEmail", email)
         startActivity(intent)
     }
 }

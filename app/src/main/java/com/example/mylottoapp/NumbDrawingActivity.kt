@@ -9,24 +9,18 @@ import android.os.Looper
 import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import com.example.mylottoapp.firestore.FireStoreData
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 import kotlin.random.Random
 
 /**
- * Klasa odpowiedzialna za rysowanie numerów i wyświetlanie wyników losowania.
+ * Class responsible for drawing numbers and displaying the results.
  */
 class NumbDrawingActivity : BaseActivity() {
 
-    val db = Firebase.firestore
+    private val db = Firebase.firestore
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,8 +36,9 @@ class NumbDrawingActivity : BaseActivity() {
         progressBar.max = 6
         val delayMillis = 1000L
         val handler = Handler(Looper.getMainLooper())
-        val statisticsBtn = findViewById<Button>(R.id.statisticsBtn)
-        statisticsBtn.isEnabled = false
+        val statisticsBtn = findViewById<Button>(R.id.statisticsBtn).apply {
+            isEnabled = false
+        }
 
         val buttons = listOf(
             findViewById<Button>(R.id.button1),
@@ -56,10 +51,10 @@ class NumbDrawingActivity : BaseActivity() {
 
         var selectedNumbers: IntArray? = IntArray(6)
 
-        // Pobieranie danych z Firestore
-        if (formattedDateTime != null) {
-            db.collection(FirebaseAuth.getInstance().currentUser?.email.toString())
-                .document(formattedDateTime)
+        // Fetching data from Firestore
+        formattedDateTime?.let { dateTime ->
+            db.collection(FirebaseAuth.getInstance().currentUser?.email.orEmpty())
+                .document(dateTime)
                 .get()
                 .addOnSuccessListener { documentSnapshot ->
                     if (documentSnapshot.exists()) {
@@ -68,29 +63,25 @@ class NumbDrawingActivity : BaseActivity() {
                     }
                 }
                 .addOnFailureListener { e ->
-                    println("Error getting document usersNumbers - " +
-                            "${FirebaseAuth.getInstance().currentUser?.email}: $e")
+                    println("Error getting document for user ${FirebaseAuth.getInstance().currentUser?.email}: $e")
                 }
         }
 
-        // Ustawienie nasłuchiwacza dla przycisku losowania
+        // Listener for the "Draw Numbers" button
         drawingButton.setOnClickListener {
             drawingButton.isEnabled = false
-
-            for (button in buttons) {
-                button.visibility = View.INVISIBLE
-            }
+            buttons.forEach { it.visibility = View.INVISIBLE }
 
             Thread {
                 var progressStatus = 0
-                val drawingNumbs = lotto()
+                val drawnNumbers = generateRandomNumbers()
 
-                for (button in buttons) {
-                    progressStatus += 1
+                buttons.forEachIndexed { index, button ->
+                    progressStatus++
                     handler.post {
                         progressBar.progress = progressStatus
-                        button.text = drawingNumbs[progressStatus - 1].toString()
-                        if (selectedNumbers?.contains(drawingNumbs[progressStatus - 1]) == true) {
+                        button.text = drawnNumbers[index].toString()
+                        if (selectedNumbers?.contains(drawnNumbers[index]) == true) {
                             button.setBackgroundColor(Color.GREEN)
                             button.setTextColor(Color.WHITE)
                             score++
@@ -100,151 +91,84 @@ class NumbDrawingActivity : BaseActivity() {
                         }
                         button.visibility = View.VISIBLE
                     }
-                    try {
-                        Thread.sleep(delayMillis)
-                    } catch (e: InterruptedException) {
-                        e.printStackTrace()
-                    }
+                    Thread.sleep(delayMillis)
                 }
 
                 runOnUiThread {
-                    val winsNumb = simPlayers(doubleArrayOf(7.2e-8, 1.8e-5, 0.00097, 0.077))
-                    val win = calculateWin(Random.nextDouble(0.0, 50e6), winsNumb, score)
+                    val winners = simulatePlayerWins(doubleArrayOf(7.2e-8, 1.8e-5, 0.00097, 0.077))
+                    val winAmount = calculateWinnings(Random.nextDouble(0.0, 50e6), winners, score)
 
-                    val updates = mapOf(
-                        "win" to win,
-                        "drawNumb" to drawingNumbs.toList()
-                    )
-
-                    if (formattedDateTime != null) {
-                        db.collection(FirebaseAuth.getInstance().currentUser?.email.toString())
-                            .document(formattedDateTime)
+                    formattedDateTime?.let { dateTime ->
+                        val updates = mapOf(
+                            "win" to winAmount,
+                            "drawNumb" to drawnNumbers.toList()
+                        )
+                        db.collection(FirebaseAuth.getInstance().currentUser?.email.orEmpty())
+                            .document(dateTime)
                             .update(updates)
                             .addOnSuccessListener {
-                                println("Document updated successfully in usersNumbers" +
-                                        "/${FirebaseAuth.getInstance().currentUser?.email}")
+                                println("Document successfully updated for user ${FirebaseAuth.getInstance().currentUser?.email}")
                             }
                             .addOnFailureListener { e ->
-                                println("Error updating document in usersNumbers" +
-                                        "/${FirebaseAuth.getInstance().currentUser?.email}: $e")
+                                println("Error updating document for user ${FirebaseAuth.getInstance().currentUser?.email}: $e")
                             }
                     }
-                    statisticsBtn.isEnabled = true
 
-                    showErrorSnackBar("You win: $win $", errorMessage = false)
+                    statisticsBtn.isEnabled = true
+                    showErrorSnackBar("You win: $winAmount $", errorMessage = false)
                     drawingButton.isEnabled = true
                 }
             }.start()
         }
 
-        // Ustawienie nasłuchiwacza dla przycisku statystyk
+        // Listener for the "Statistics" button
         statisticsBtn.setOnClickListener {
-            val intent = Intent(this, StatisticsActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this, StatisticsActivity::class.java))
         }
     }
 
     /**
-     * Funkcja symulująca wygrane innych graczy na podstawie tablicy prawdopodobieństw.
+     * Simulates player wins based on probability array.
      *
-     * @param probabilityArray Tablica prawdopodobieństw dla różnych wygranych.
-     * @param numberOfPopulation Liczba populacji graczy (domyślnie 1000).
-     * @return Tablica z liczbą wygranych dla różnych kategorii.
+     * @param probabilities Array of probabilities for different win categories.
+     * @param population Number of players in the simulation (default 1000).
+     * @return Array with the count of winners in each category.
      */
-    fun simPlayers(probabilityArray: DoubleArray, numberOfPopulation: Int = 1000): IntArray {
-        val numberOfPlayers = Random.nextInt(numberOfPopulation)
-        val numberOfWins = IntArray(4)
-        var iterator = 0
-        for (probability in probabilityArray) {
-            var numberOfWinningPlayers = 0
-            repeat(numberOfPlayers) {
-                val randomValue = Random.nextDouble(0.0, 1.0)
-                if (randomValue < probability) {
-                    numberOfWinningPlayers++
-                }
+    private fun simulatePlayerWins(probabilities: DoubleArray, population: Int = 1000): IntArray {
+        val playerCount = Random.nextInt(population)
+        return probabilities.map { probability ->
+            (0 until playerCount).count {
+                Random.nextDouble() < probability
             }
-            numberOfWins[iterator] = numberOfWinningPlayers
-            iterator++
-            numberOfWinningPlayers = 0
-        }
-        return numberOfWins
+        }.toIntArray()
     }
 
     /**
-     * Funkcja obliczająca wygraną gracza na podstawie kumulacji, liczby innych zwycięzców i wyniku gracza.
+     * Calculates the winnings for the player based on jackpot, other winners, and the player's score.
      *
-     * @param cummulate Kwota kumulacji.
-     * @param winners Tablica z liczbą innych zwycięzców.
-     * @param score Wynik gracza (liczba trafionych liczb).
-     * @return Kwota wygranej gracza.
+     * @param jackpot Total jackpot amount.
+     * @param winners Array of other winners in each category.
+     * @param score Player's score (number of matched numbers).
+     * @return Winnings amount for the player.
      */
-    fun calculateWin(cummulate: Double = 0.0, winners: IntArray, score: Int = 0): Double {
+    private fun calculateWinnings(jackpot: Double, winners: IntArray, score: Int): Double {
         return when (score) {
-            6 -> (cummulate * 0.44) / (winners[0] + 1)
-            5 -> (cummulate * 0.08) / (winners[1] + 1)
-            4 -> (cummulate * 0.48) / (winners[2] + 1)
-            3 -> (cummulate * 0.48) / (winners[3] + 1)
+            6 -> (jackpot * 0.44) / (winners[0] + 1)
+            5 -> (jackpot * 0.08) / (winners[1] + 1)
+            4 -> (jackpot * 0.48) / (winners[2] + 1)
+            3 -> (jackpot * 0.48) / (winners[3] + 1)
             else -> 0.0
         }
     }
 
     /**
-     * Funkcja losująca liczby.
+     * Generates a set of random numbers.
      *
-     * @param n Liczba losowanych liczb (domyślnie 6).
-     * @param m Zakres losowania (domyślnie 6).
-     * @return Tablica z wylosowanymi liczbami.
+     * @param count Number of numbers to generate (default 6).
+     * @param range Range of numbers (default 1 to 49).
+     * @return Array of randomly generated numbers.
      */
-    fun lotto(n: Int = 6, m: Int = 6): IntArray {
-        if (m < n) {
-            println("Range cannot be smaller than array size")
-            return IntArray(n)
-        } else {
-            val numbers = IntArray(n)
-            var iterator = 0
-            var number: Int
-            var check: Boolean
-            do {
-                number = (1..m).random()
-                check = true
-                for (i in 0 until iterator) {
-                    if (numbers[i] == number) {
-                        check = false
-                        break
-                    }
-                }
-                if (check) {
-                    numbers[iterator++] = number
-                }
-            } while (iterator < n)
-            return numbers
-        }
-    }
-
-    /**
-     * Funkcja pobierająca dane z Firestore.
-     *
-     * @param formattedDateTime Sformatowana data i czas.
-     * @return Dane z Firestore w postaci FireStoreData.
-     */
-    suspend fun fetchDataFromFirestore(formattedDateTime: String): FireStoreData? {
-        return suspendCancellableCoroutine { continuation ->
-            val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email.toString()
-            val db = FirebaseFirestore.getInstance()
-            val docRef = db.collection(currentUserEmail).document(formattedDateTime)
-
-            docRef.get()
-                .addOnSuccessListener { documentSnapshot ->
-                    if (documentSnapshot.exists()) {
-                        val dbData = documentSnapshot.toObject(FireStoreData::class.java)
-                        continuation.resume(dbData)
-                    } else {
-                        continuation.resume(null)
-                    }
-                }
-                .addOnFailureListener { e ->
-                    continuation.resumeWithException(e)
-                }
-        }
+    private fun generateRandomNumbers(count: Int = 6, range: Int = 49): IntArray {
+        return (1..range).shuffled().take(count).toIntArray()
     }
 }

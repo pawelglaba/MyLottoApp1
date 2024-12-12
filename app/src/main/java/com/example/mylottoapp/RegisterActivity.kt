@@ -16,73 +16,72 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 
 /**
- * Klasa odpowiedzialna za rejestrację użytkownika.
+ * Activity responsible for user registration.
  */
 class RegisterActivity : BaseActivity() {
 
-    private var inputEmail: EditText? = null
-    private var inputName: EditText? = null
-    private var inputPassword: EditText? = null
-    private var inputRepPass: EditText? = null
+    private var emailInput: EditText? = null
+    private var nameInput: EditText? = null
+    private var passwordInput: EditText? = null
+    private var confirmPasswordInput: EditText? = null
 
     /**
-     * Metoda wywoływana przy tworzeniu aktywności.
-     * Inicjalizuje widoki i ustawia nasłuchiwacze kliknięć.
+     * Called when the activity is created. Initializes views and sets up click listeners.
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_register)
 
-        // Inicjalizacja przycisku rejestracji
-        var registerButton: Button = findViewById(R.id.registerButton)
+        // Initialize the register button
+        val registerButton: Button = findViewById(R.id.registerButton)
         registerButton.isEnabled = false
 
-        // Ustawienie nasłuchiwacza przełącznika wieku
-        val switchView = findViewById<Switch>(R.id.ageSwitch)
-        switchView.setOnCheckedChangeListener { _, isChecked ->
+        // Set up age confirmation switch listener
+        val ageSwitch = findViewById<Switch>(R.id.ageSwitch)
+        ageSwitch.setOnCheckedChangeListener { _, isChecked ->
             registerButton.isEnabled = isChecked
-            switchView.text = if (isChecked) "YES" else "NO"
+            ageSwitch.text = if (isChecked) "YES" else "NO"
         }
 
-        // Inicjalizacja pól wprowadzania
-        inputEmail = findViewById(R.id.inputLEmaill)
-        inputName = findViewById(R.id.inputName)
-        inputPassword = findViewById(R.id.inputPassword2)
-        inputRepPass = findViewById(R.id.inputPassword2repeat)
+        // Initialize input fields
+        emailInput = findViewById(R.id.inputLEmaill)
+        nameInput = findViewById(R.id.inputName)
+        passwordInput = findViewById(R.id.inputPassword2)
+        confirmPasswordInput = findViewById(R.id.inputPassword2repeat)
 
-        // Ustawienie nasłuchiwacza dla przycisku rejestracji
-        registerButton?.setOnClickListener {
-            if (validateRegisterDetails()) {
+        // Set up register button listener
+        registerButton.setOnClickListener {
+            if (validateRegistrationDetails()) {
                 registerUser()
             }
         }
     }
 
     /**
-     * Metoda walidująca dane rejestracyjne.
+     * Validates the registration details provided by the user.
      *
-     * @return Zwraca true, jeśli dane są poprawne, w przeciwnym razie false.
+     * @return true if the details are valid, false otherwise.
      */
-    private fun validateRegisterDetails(): Boolean {
+    private fun validateRegistrationDetails(): Boolean {
         return when {
-            TextUtils.isEmpty(inputEmail?.text.toString().trim { it <= ' ' }) -> {
-                showErrorSnackBar(resources.getString(R.string.err_msg_enter_email), true)
+            TextUtils.isEmpty(emailInput?.text.toString().trim()) -> {
+                showErrorSnackBar(getString(R.string.err_msg_enter_email), true)
                 false
             }
-            TextUtils.isEmpty(inputName?.text.toString().trim { it <= ' ' }) -> {
-                showErrorSnackBar(resources.getString(R.string.err_msg_enter_name), true)
+            TextUtils.isEmpty(nameInput?.text.toString().trim()) -> {
+                showErrorSnackBar(getString(R.string.err_msg_enter_name), true)
                 false
             }
-            TextUtils.isEmpty(inputPassword?.text.toString().trim { it <= ' ' }) -> {
-                showErrorSnackBar(resources.getString(R.string.err_msg_enter_password), true)
+            TextUtils.isEmpty(passwordInput?.text.toString().trim()) -> {
+                showErrorSnackBar(getString(R.string.err_msg_enter_password), true)
                 false
             }
-            TextUtils.isEmpty(inputRepPass?.text.toString().trim { it <= ' ' }) -> {
-                showErrorSnackBar(resources.getString(R.string.err_msg_enter_reppassword), true)
+            TextUtils.isEmpty(confirmPasswordInput?.text.toString().trim()) -> {
+                showErrorSnackBar(getString(R.string.err_msg_enter_reppassword), true)
                 false
             }
-            inputPassword?.text.toString().trim { it <= ' ' } != inputRepPass?.text.toString().trim { it <= ' ' } -> {
-                showErrorSnackBar(resources.getString(R.string.err_msg_password_mismatch), true)
+            passwordInput?.text.toString().trim() != confirmPasswordInput?.text.toString().trim() -> {
+                showErrorSnackBar(getString(R.string.err_msg_password_mismatch), true)
                 false
             }
             else -> true
@@ -90,9 +89,9 @@ class RegisterActivity : BaseActivity() {
     }
 
     /**
-     * Metoda przechodząca do aktywności logowania.
+     * Navigates the user to the login activity.
      *
-     * @param view Widok, który został kliknięty.
+     * @param view The clicked view.
      */
     fun goToLogin(view: View) {
         val intent = Intent(this, MainActivity::class.java)
@@ -101,25 +100,25 @@ class RegisterActivity : BaseActivity() {
     }
 
     /**
-     * Metoda rejestrująca użytkownika.
+     * Registers the user using Firebase authentication.
      */
     private fun registerUser() {
-        if (validateRegisterDetails()) {
-            val login: String = inputEmail?.text.toString().trim { it <= ' ' }
-            val password: String = inputPassword?.text.toString().trim { it <= ' ' }
-            val name: String = inputName?.text.toString().trim { it <= ' ' }
+        if (validateRegistrationDetails()) {
+            val email: String = emailInput?.text.toString().trim()
+            val password: String = passwordInput?.text.toString().trim()
+            val name: String = nameInput?.text.toString().trim()
 
-            FirebaseAuth.getInstance().createUserWithEmailAndPassword(login, password).addOnCompleteListener(
+            FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password).addOnCompleteListener(
                 OnCompleteListener<AuthResult> { task ->
                     if (task.isSuccessful) {
                         val firebaseUser: FirebaseUser = task.result!!.user!!
-                        showErrorSnackBar("You are registered successfully. Your user id is ${firebaseUser.uid}", false)
+                        showErrorSnackBar("Registration successful. User ID: ${firebaseUser.uid}", false)
 
                         val user = User(
                             firebaseUser.uid,
                             name,
                             true,
-                            login
+                            email
                         )
                         FireStoreClass().registerUserFS(this@RegisterActivity, user)
 
@@ -134,9 +133,9 @@ class RegisterActivity : BaseActivity() {
     }
 
     /**
-     * Metoda wywoływana po pomyślnej rejestracji użytkownika.
+     * Called when the user is successfully registered in the Firestore database.
      */
     fun userRegistrationSuccess() {
-        Toast.makeText(this@RegisterActivity, resources.getString(R.string.register_success), Toast.LENGTH_LONG).show()
+        Toast.makeText(this@RegisterActivity, getString(R.string.register_success), Toast.LENGTH_LONG).show()
     }
 }

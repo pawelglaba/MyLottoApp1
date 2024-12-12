@@ -5,41 +5,33 @@ import androidx.core.content.ContextCompat
 import com.google.android.material.snackbar.Snackbar
 
 /**
- * BaseActivity jest otwartą klasą, która rozszerza AppCompatActivity.
- * Zapewnia metodę do wyświetlania Snackbar z niestandardowym komunikatem i kolorem tła w zależności od stanu błędu.
+ * BaseActivity is an open class extending AppCompatActivity.
+ * It provides a method to display a Snackbar with a custom message and background color based on the error state.
  */
 open class BaseActivity : AppCompatActivity() {
 
     /**
-     * Wyświetla Snackbar z określonym komunikatem.
-     * Kolor tła Snackbar jest określany przez parametr errorMessage.
+     * Displays a Snackbar with the specified message.
+     * The Snackbar's background color is determined by the errorMessage parameter.
      *
-     * @param message Komunikat do wyświetlenia w Snackbar.
-     * @param errorMessage Boolean wskazujący, czy komunikat jest komunikatem o błędzie.
+     * @param message The message to display in the Snackbar.
+     * @param errorMessage Boolean indicating whether the message is an error message.
      */
     fun showErrorSnackBar(message: String, errorMessage: Boolean) {
-        // Utwórz Snackbar z określonym komunikatem
+        // Create a Snackbar with the specified message
         val snackbar = Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_SHORT)
         val snackbarView = snackbar.view
 
-        // Ustaw kolor tła w zależności od tego, czy jest to komunikat o błędzie
-        if (errorMessage) {
-            snackbarView.setBackgroundColor(
-                ContextCompat.getColor(
-                    this@BaseActivity,
-                    R.color.snackBarSuccessful
-                )
-            )
+        // Set the background color based on the error state
+        val backgroundColorRes = if (errorMessage) {
+            R.color.snackBarError
         } else {
-            snackbarView.setBackgroundColor(
-                ContextCompat.getColor(
-                    this@BaseActivity,
-                    R.color.snackBarError
-                )
-            )
+            R.color.snackBarSuccessful
         }
 
-        // Pokaż Snackbar
+        snackbarView.setBackgroundColor(ContextCompat.getColor(this@BaseActivity, backgroundColorRes))
+
+        // Show the Snackbar
         snackbar.show()
     }
 }

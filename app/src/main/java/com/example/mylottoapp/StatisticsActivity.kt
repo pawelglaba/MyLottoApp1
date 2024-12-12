@@ -1,25 +1,26 @@
 package com.example.mylottoapp
 
 import android.annotation.SuppressLint
-import android.content.ContentValues.TAG
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 /**
- * Aktywność wyświetlająca statystyki gier użytkownika.
+ * Activity displaying user game statistics.
  */
 class StatisticsActivity : AppCompatActivity() {
 
-    val db = Firebase.firestore
-    val list: MutableList<String> = ArrayList()
+    private val db = Firebase.firestore
+    private val gameResultsList: MutableList<String> = mutableListOf()
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,30 +28,37 @@ class StatisticsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_statistics)
 
         val recyclerView: RecyclerView = findViewById(R.id.statisticRecyclerView)
-        recyclerView.layoutManager = LinearLayoutManager(this) // Konfiguracja RecyclerView - ustawienie elementów w trybie pionowym
+        recyclerView.layoutManager = LinearLayoutManager(this) // Set RecyclerView to vertical layout
 
-        val email = FirebaseAuth.getInstance().currentUser?.email.toString()
+        val email = FirebaseAuth.getInstance().currentUser?.email.orEmpty()
 
-        // Pobieranie dokumentów z Firestore dla zalogowanego użytkownika
-        db.collection(email).get()
-            .addOnCompleteListener(OnCompleteListener<QuerySnapshot> { task ->
-                if (task.isSuccessful) {
-                    for (document in task.result) {
-                        list.add(document.id)
-                    }
-                    val gameResults: List<String> = list.toList()
-                    val adapter = MyAdapter(gameResults, object : ButtonClickListener {
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                fetchGameResults(email)
+                CoroutineScope(Dispatchers.Main).launch {
+                    val adapter = StatisticsAdapter(gameResultsList, object : ButtonClickListener {
                         override fun onButtonClick(position: Int) {
-                            // dla testów
-                            println("Button clicked in item at position: $position")
+                            Log.d("StatisticsActivity", "Button clicked at position: $position")
                         }
                     })
                     recyclerView.adapter = adapter
-
-                    Log.d(TAG, list.toString())
-                } else {
-                    Log.d(TAG, "Error getting documents: ", task.exception)
                 }
-            })
+            } catch (e: Exception) {
+                Log.e("StatisticsActivity", "Error fetching documents", e)
+            }
+        }
+    }
+
+    /**
+     * Fetches game results from Firestore and updates the gameResultsList.
+     *
+     * @param email The email of the logged-in user, used to access their collection.
+     */
+    private suspend fun fetchGameResults(email: String) {
+        val querySnapshot = db.collection(email).get().await()
+        for (document in querySnapshot.documents) {
+            gameResultsList.add(document.id)
+        }
     }
 }
